@@ -3,10 +3,12 @@ var querystring = require("querystring");
 var fs = require("fs");
 var formidable = require("formidable");
 var _path = __dirname;
+var _counts = 0;
 
-function start(response) {
+function start(response,request, counts) {
 	console.log("Request handler 'start' was called.");
-		
+	
+	/*
 	var body = '<html>'+
 				'<head>'+
 				'<meta http-equiv="Content-Type" '+
@@ -18,6 +20,19 @@ function start(response) {
 						'<input type="file" name="upload">'+
 						'<input type="submit" value="Upload file" />'+
 					'</form>'+
+				'</body>'+
+				'</html>';
+	*/
+	
+	var body = '<html>'+
+				'<head>'+
+				'<meta http-equiv="Content-Type" '+
+				'content="text/html; charset=UTF-8" />'+
+				'</head>'+
+				'<body>'+
+					'<form action="/click">' +
+						'<input type="submit" value="Click Me">' +
+					'<a>Button counts to: '+counts+'</a>'+
 				'</body>'+
 				'</html>';
 		
@@ -33,6 +48,31 @@ function start(response) {
 	return "Hello Start";
 	*/
 }
+
+function click(response,request, counts)
+{
+	counts++;
+	_counts++;
+	console.log('Increasing counts to: '+counts+' , _counts: '+_counts);
+	var body = '<html>'+
+				'<head>'+
+				'<meta http-equiv="Content-Type" '+
+				'content="text/html; charset=UTF-8" />'+
+				'</head>'+
+				'<body>'+
+					'<form action="/click">' +
+						'<input type="submit" value="Click Me">' +
+					'<a>Button counts to: '+_counts+'</a>'+
+				'</body>'+
+				'</html>';
+		
+	response.writeHead(200, {"Content-Type": "text/html"});
+	response.write(body);
+	response.end();
+	
+}
+	
+
 function upload(response, request) {
 	console.log("Request handler 'upload' was called.");
 	var form = new formidable.IncomingForm();
@@ -71,7 +111,7 @@ function show(response) {
 	});
 }
 
-
+exports.click = click;
 exports.start = start;
 exports.upload = upload;
 exports.show = show;
