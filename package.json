@@ -14,12 +14,20 @@
     "test",
     "node"
   ],
-  "author": "rvik-doe",
+  "author": "tvik-doe",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/tvvik/node-playing/issues"
   },
   "engines": {
     "node": "0.10.x"
-  }
+  },
+  "homepage": "https://github.com/jane-doe/node-example",
+  "dependencies": {
+    "express": "^3.5.1",
+    "foreman": "^0.2.1",
+    "formidable": "^1.0.14",
+    "logfmt": "^1.1.2"
+  },
+  "devDependencies": {}
 }
