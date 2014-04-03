@@ -33,9 +33,16 @@ function start(route, handle) {
 		socket.on('client_data', function (data){
 			counts++;
 			console.log('increase count: '+counts);
-			socket.emit('count', {'count':counts});
+			emitToAll(counts);
 			//process.stdout.write(data.letter);
 		});
+		
+		function emitToAll(counts){
+			//io.sockets.emit('count', {'count':counts});
+			socket.emit('count', {'count':counts});
+			socket.broadcast.emit('count', {'count':counts});
+			//socket.emit('count', {'count':counts});
+		}
 	});
 	//io.set('log level', 1);
 	//var io = io.listen(http.createServer(onRequest).listen(process.env.PORT || 5000););
