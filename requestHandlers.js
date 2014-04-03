@@ -42,8 +42,8 @@ function upload(response, request) {
 		tried to rename to an already existing file */
 		fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function(err) {
 			if (err) {
-				fs.unlink("/tmp/tmp.png");
-				fs.rename(files.upload.path, __dirname+"/tmp/tmp.png");
+				fs.unlink(__dirname + "/tmp/tmp.png");
+				fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", callback);
 			}
 		});
 		response.writeHead(200, {"Content-Type": "text/html"});
