@@ -25,7 +25,6 @@
   "homepage": "https://github.com/jane-doe/node-example",
   "dependencies": {
     "express": "^3.5.1",
-    "foreman": "^0.2.1",
     "formidable": "^1.0.14",
     "logfmt": "^1.1.2"
   },
