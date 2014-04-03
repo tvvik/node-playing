@@ -40,13 +40,15 @@ function upload(response, request) {
 		console.log("parsing done");
 		/* Possible error on Windows systems:
 		tried to rename to an already existing file */
+		response.writeHead(200, {"Content-Type": "text/html"});
 		fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function(err) {
 			if (err) {
 				fs.unlink(__dirname + "/tmp/tmp.png");
-				fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", callback);
+				fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function (err) {
+					if (err) response.write(err + "received error renaming image<br/>");
+				});
 			}
-		});
-		response.writeHead(200, {"Content-Type": "text/html"});
+		});		
 		response.write("received image:<br/>");
 		response.write("<img src='/show' />");
 		response.end();
