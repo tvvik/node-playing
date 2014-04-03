@@ -40,10 +40,10 @@ function upload(response, request) {
 		console.log("parsing done");
 		/* Possible error on Windows systems:
 		tried to rename to an already existing file */
-		fs.rename(files.upload.path, "/tmp/tmp.png", function(err) {
+		fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function(err) {
 			if (err) {
 				fs.unlink("/tmp/tmp.png");
-				fs.rename(files.upload.path, "/tmp/tmp.png");
+				fs.rename(files.upload.path, __dirname+"/tmp/tmp.png");
 			}
 		});
 		response.writeHead(200, {"Content-Type": "text/html"});
@@ -55,7 +55,7 @@ function upload(response, request) {
 
 function show(response) {
 	console.log("Request handler 'show' was called.");
-	fs.readFile("/tmp/tmp.png", "binary", function(error, file) {
+	fs.readFile(__dirname+"/tmp/tmp.png", "binary", function(error, file) {
 		if(error) {
 			response.writeHead(500, {"Content-Type": "text/plain"});
 			response.write(error + " aruncata de FS \n");
