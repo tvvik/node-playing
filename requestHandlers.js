@@ -45,7 +45,7 @@ function upload(response, request) {
 			if (err) {
 				fs.unlink(__dirname + "/tmp/tmp.png");
 				fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function (err) {
-					if (err) response.write(err + "received error renaming image<br/>");
+					if (err) console.log('error renaming file');
 				});
 			}
 		});		
