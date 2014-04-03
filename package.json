@@ -18,5 +18,8 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/tvvik/node-playing/issues"
+  },
+  "engines": {
+    "node": "0.10.x"
   }
 }
