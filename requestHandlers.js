@@ -2,6 +2,7 @@ var exec = require("child_process").exec;
 var querystring = require("querystring");
 var fs = require("fs");
 var formidable = require("formidable");
+var _path = __dirname;
 
 function start(response) {
 	console.log("Request handler 'start' was called.");
@@ -41,11 +42,11 @@ function upload(response, request) {
 		/* Possible error on Windows systems:
 		tried to rename to an already existing file */
 		response.writeHead(200, {"Content-Type": "text/html"});
-		fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function(err) {
+		fs.rename(files.upload.path, _path + "/tmp/tmp.png", function(err) {
 			if (err) {
-				fs.unlink(__dirname + "/tmp/tmp.png");
-				fs.rename(files.upload.path, __dirname + "/tmp/tmp.png", function (err) {
-					if (err) console.log('error renaming file');
+				fs.unlink(_path + "/tmp/tmp.png");
+				fs.rename(files.upload.path, _path + "/tmp/tmp.png", function (err) {
+					if (err) console.log('error renaming file: '+err);
 				});
 			}
 		});		
@@ -57,7 +58,7 @@ function upload(response, request) {
 
 function show(response) {
 	console.log("Request handler 'show' was called.");
-	fs.readFile(__dirname+"/tmp/tmp.png", "binary", function(error, file) {
+	fs.readFile(_path+"/tmp/tmp.png", "binary", function(error, file) {
 		if(error) {
 			response.writeHead(500, {"Content-Type": "text/plain"});
 			response.write(error + " aruncata de FS \n");
