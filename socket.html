@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>  </head>
+  <body>
+    <script>
+      var socket = io.connect();
+
+      socket.on('count', function(data){
+        $('#counter').text(data.count);
+      });
+	  
+	  $(document).ready(function(){
+		$('#clikme').click(function(){
+		   console.log('click');
+		   socket.emit('client_data', {'count': 0});
+		});
+	});
+	  
+	  function increaseCounter(){
+		socket.emit('client_data', {'count':0});
+		}
+	  
+    </script>
+	<button id="clikme">Click Me</button>
+    <div id="counter"></div>
+  </body>
+</html>

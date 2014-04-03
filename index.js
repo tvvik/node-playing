@@ -8,5 +8,6 @@ handle["/start"] = requestHandlers.start;
 handle["/upload"] = requestHandlers.upload;
 handle["/show"] = requestHandlers.show;
 handle["/click"] = requestHandlers.click;
+handle["/socket.html"] = requestHandlers.socket;
 
 server.start(router.route, handle);

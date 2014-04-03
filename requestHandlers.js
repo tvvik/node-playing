@@ -1,6 +1,7 @@
 var exec = require("child_process").exec;
 var querystring = require("querystring");
 var fs = require("fs");
+var url = require('url');
 var formidable = require("formidable");
 var _path = __dirname;
 var _counts = 0;
@@ -96,6 +97,23 @@ function upload(response, request) {
 	});
 }
 
+function socket(response, request){
+	var path = url.parse(request.url).pathname;
+	fs.readFile(__dirname + path, function(error, data){
+        if (error){
+			response.writeHead(404);
+            response.write("opps this doesn't exist - 404");
+			response.end();
+        }
+        else{
+            response.writeHead(200, {"Content-Type": "text/html"});
+            response.write(data, "utf8");
+			response.end();
+         }
+    });
+	
+}
+
 function show(response) {
 	console.log("Request handler 'show' was called.");
 	fs.readFile(_path+"/tmp/tmp.png", "binary", function(error, file) {
@@ -115,3 +133,4 @@ exports.click = click;
 exports.start = start;
 exports.upload = upload;
 exports.show = show;
+exports.socket = socket;

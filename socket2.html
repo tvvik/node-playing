@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>  </head>
+  <body>
+    <script>
+      var socket = io.connect();
+
+      socket.on('count', function(data){
+        $('#counter').text(data.count);
+      });
+	  
+	  function increaseCounter(){
+		socket.emit(('counter', {'count':counts}));
+	  
+    </script>
+	<button onclick="increaseCounter()">Click Me</button>
+    <div id="counter"></div>
+  </body>
+</html>
