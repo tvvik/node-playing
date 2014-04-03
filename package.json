@@ -1,0 +1,22 @@
+{
+  "name": "node-starting-server",
+  "version": "0.0.0",
+  "description": "This small server is so cool.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jane-doe/node-example.git"
+  },
+  "keywords": [
+    "test",
+    "node"
+  ],
+  "author": "rvik-doe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tvvik/node-playing/issues"
+  }
+}
