@@ -1,0 +1,676 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <title>aeche game</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  	<link rel="stylesheet" type="text/css" href="css/all.css">
+  	<link rel="shortcut icon" href="art/aeche_logo.jpg"/>
+</head>
+<body>
+<div id="info1"><a href="http://www.aeche.eu" target="_blank">aeche studio</a> Carrot Collector Game</div>
+<div id="info2">Use the mouse to navigate around. Scroll to zoom in/out</div>
+<div id="color_overlay"></div>
+<div id="score">
+<span id="myspan"></span>
+</div>
+<div id="score2">.</div>
+<div id="popup">
+<span id="pop"></span>
+<button id="button1" class="myButton" type="button" style="z-index:-1; visibility:hidden"; onclick="clearScreen()">Continue</button>
+</div>
+<div id="RightPanel">
+	<p class="menu" > Settings Panel </p>
+	Antialiasing:<button class="menu" type="button" onClick="changeAliasing()">On</button>
+	<br> Shadows On/Off <br> Shadow Quality
+</div>
+<script src="js/three.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src='js/Tween.js'></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+<script src='custom/spawn.js'></script>
+<script src='custom/physics.js'></script>
+<script src="/socket.io/socket.io.js"></script>
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+<script>
+
+var socket = io.connect();
+
+socket.on('count', function(data){
+    $('#counter').text(data.count);
+});
+	  
+$(document).ready(function(){
+	$('#clikme').click(function(){
+		console.log('click');
+		socket.emit('client_data', {'count': 0});
+	});
+});
+	  
+function increaseCounter(){
+	socket.emit('client_data', {'count':0});
+}
+
+// standard global variables
+var jsonLoader = new THREE.JSONLoader();
+var container, scene, camera, renderer, controls, stats;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+var positionArray = [];
+var positionArrayPhy = [];
+var planeArray = [];
+var meshNPC, meshNPC1, mesh, mesh116;
+var counter = 0;
+var projector = new THREE.Projector(), 
+    mouse_vector = new THREE.Vector3(),
+    mouse = { x: 0, y: 0, z: 1 },
+    ray = new THREE.Raycaster( new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0) ),
+    intersects = []; 
+var spotLight;
+var lastKeyframe = 0, currentKeyframe = 0;
+var timeNow = 0;
+var spotLight;
+var sun_dummy, camera_dummy;
+var mesh_clicker;
+var plane;
+var mesh_position_plane;
+var PhysicalCube;
+var npc_dummy;
+var vector_up = new THREE.Vector3(0,1,0);
+var vector_x = new THREE.Vector3(1,0,0);
+
+//CONTROLERS
+var total_items_collected = 50;
+var items_collected= 6;
+var playerPosX =  4361;
+var playerPosY = 40;
+var playerPosZ = 960;
+var alias = true;
+var sun_color = 0xFFFBB9;
+var shadow_quality = 1024;
+var camera_max_speed = 0.001;
+
+init();
+animate();
+
+function interpolate(x1,x2,x3,y1,y3)
+{	
+	var y2;
+	y2 = ((x2-x1)*(y3-y1))/(x3-x1) + y1;
+	return y2;
+}
+
+function init() 
+{
+	// SCENE
+	scene = new THREE.Scene();
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 55, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 10000;
+	// CAMERA
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	camera.position.set(0,1500,4000);
+	scene.add(camera);
+
+	
+	// RENDERER
+	renderer = new THREE.WebGLRenderer( {antialias:alias} );
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	renderer.setClearColor( 0x7EB7B7, 1 );
+	renderer.autoClear = false;
+	renderer.shadowMapEnabled = true;
+	renderer.shadowMapType = THREE.PCFShadowMap;
+	renderer.shadowMapSoft = true;
+
+	container = document.getElementById( 'ThreeJS' );
+	container.appendChild( renderer.domElement );
+
+	// EVENTS
+	THREEx.WindowResize(renderer, camera);
+	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+ 	renderer.domElement.addEventListener( 'mousedown', onMouseDown );
+ 	//renderer.domElement.addEventListener( 'mousemove', onMouseMove );
+ 	renderer.domElement.addEventListener( 'mousewheel', onMouseWheel );
+ 	renderer.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false );
+
+	//GEOMETRY
+	jsonLoader.load( "art/terrain.js",addShadowReceiverToScene);
+	jsonLoader.load( "art/vegetation.js",addShadowCasterToScene);
+	jsonLoader.load( "art/char06.js",addCharToScene);
+	jsonLoader.load( "art/npc_01.js",addNPCToScene);
+	jsonLoader.load( "art/npc_01_ol.js",addNPCOLToScene);
+	jsonLoader.load( "art/bubble.js",addBubbleToScene);
+	jsonLoader.load( "art/clicker.js",addClickerToScene);
+	jsonLoader.load( "art/position_plane.js",addPositionPlaneToScene);
+	
+
+	function addPositionPlaneToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial( materials );
+		mesh_position_plane = new THREE.Mesh( geometry, material );
+		mesh_position_plane.id = 116116116;
+		mesh_position_plane.position.y = 30;
+			mesh_position_plane.visible = false;
+			scene.add( mesh_position_plane );
+		}			
+	function addShadowReceiverToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial( materials );
+		var mesh = new THREE.Mesh( geometry, material );
+			mesh.receiveShadow = true;
+			scene.add( mesh );
+		}
+	function addShadowCasterToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial( materials );
+		var mesh = new THREE.Mesh( geometry, material );
+			mesh.castShadow = true;
+			scene.add( mesh );
+		}
+	function addCharToScene( geometry, materials ) 
+		{
+		var map = new THREE.ImageUtils.loadCompressedTexture('art/char_diff.dds')
+		mesh116 = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { map:map,color: 0x606060, morphTargets: true } ) );
+			mesh116.castShadow = true;
+			mesh116.receiveShadow = true;
+			mesh116.id = 100116;
+			mesh116.useQuaternion = true;
+			mesh116.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
+			scene.add( mesh116 );
+		}
+	function addClickerToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial(materials);
+		mesh_clicker = new THREE.Mesh( geometry, material );
+		mesh_clicker.castShadow = true;
+		scene.add( mesh_clicker );
+		}
+	function addItemsToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial( materials );
+		for(i=0;i<total_items_collected;i++)
+			{
+			meshCarrot = new THREE.Mesh( geometry, material );
+			var min = 0;
+			var max = possiblePositions.length;
+			var mscale = Math.random() * (10 - 3 + 1) + 3;
+			var random_i = Math.floor(Math.random() * (max - min + 1)) + min;
+			meshCarrot.position.set( possiblePositions[random_i].posX, possiblePositions[random_i].posY, -possiblePositions[random_i].posZ );
+			meshCarrot.scale.set(mscale,mscale,mscale);
+			positionArray.push(meshCarrot);
+			scene.add(positionArray[i]);
+			}
+		}
+		for(i=0;i<possiblePositions.length;i++)
+		{
+		plane = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshNormalMaterial());
+			plane.position.set( possiblePositions[i].posX, possiblePositions[i].posY+5, -possiblePositions[i].posZ );
+			plane.rotation.x = -Math.PI/2;
+			plane.id = 1000 + i;
+			plane.visible = false;
+			//planeArray.push(plane);
+     		//scene.add(planeArray[i]);
+     	}
+     	//console.log(planeArray)
+	function addNPCToScene( geometry, materials ) 
+		{
+		var material = new THREE.MeshFaceMaterial( materials );
+		meshNPC = new THREE.Mesh( geometry, material );
+			meshNPC.position.set(3419,0,-147);
+			meshNPC.rotation.y = 0;
+			meshNPC.id = 100001
+			meshNPC.castShadow = true;
+			meshNPC.receiveShadow = true;
+			scene.add(meshNPC);
+			return;
+		}
+	var NPCMaterials = new THREE.MeshNormalMaterial( );
+	var NPCGeometry = new THREE.CubeGeometry( 250, 700, 250, 1, 1, 1 );
+		npc_dummy = new THREE.Mesh( NPCGeometry, NPCMaterials );
+		npc_dummy.visible = false;
+		npc_dummy.id = 100002;
+		npc_dummy.position.set(3419,0,-147);
+		scene.add( npc_dummy );
+
+	function addNPCOLToScene( geometry, materials ) 
+		{
+		var material1 = new THREE.MeshLambertMaterial({side: THREE.BackSide, color: 0xffffff, transparency:0.2, transparent:true});
+		meshNPC1 = new THREE.Mesh( geometry, material1 );
+			meshNPC1.position.set(3419,0,-147);
+			meshNPC1.rotation.y = 0;
+			meshNPC1.visible = false;
+			scene.add(meshNPC1);
+		}		
+	function addBubbleToScene( geometry, materials ) 
+		{
+		var map = THREE.ImageUtils.loadTexture('bubble.png');
+		var material = new THREE.MeshFaceMaterial(materials);
+			meshBubble = new THREE.Mesh( geometry, material );
+			meshBubble.material.side = THREE.DoubleSide;
+			meshBubble.position.set(3419,198,-147);
+			meshBubble.rotation.y = 0;
+			meshBubble.visible = true;
+			scene.add(meshBubble);
+		}
+
+	var cubeMaterials = new THREE.MeshNormalMaterial( );
+	var cubeGeometry = new THREE.CubeGeometry( 100, 10, 100, 1, 1, 1 );
+		camera_dummy = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		camera_dummy.visible = false;
+		camera_dummy.useQuaternion = true;
+		camera_dummy.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
+		camera_dummy.rotation.y = Math.PI;
+		scene.add( camera_dummy );
+
+		sun_dummy = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		sun_dummy.visible = false;
+		scene.add( sun_dummy );
+
+		rotation_dummy = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		rotation_dummy.visible = false;
+		rotation_dummy.useQuaternion = true;
+		rotation_dummy.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
+		scene.add( rotation_dummy );
+
+		click_dummy = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		click_dummy.visible = false;
+		scene.add( click_dummy );
+
+		base_test = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		base_test.position.set (0,0,0);
+		base_test.useQuaternion = true;
+		base_test.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
+		//scene.add( base_test );
+
+		look_at_test = new THREE.Mesh( cubeGeometry, cubeMaterials );
+		look_at_test.position.set (0,0,500);
+		//scene.add( look_at_test );
+	// LIGHTS
+	var light = new THREE.AmbientLight( 0xCBCBCB ); // soft white light
+		scene.add( light );
+
+	scene.fog = new THREE.Fog(0x7EB7B7,15, 10000);
+
+		spotLight = new THREE.SpotLight();
+		spotLight.intensity = 1;
+		spotLight.color.setHex( sun_color );
+		spotLight.position.set( 13370,7902,-126 );
+		spotLight.target.position = sun_dummy.position;
+		spotLight.castShadow = true;
+		renderer.shadowMapBias = 0.00039;
+		spotLight.shadowMapWidth = shadow_quality;
+		spotLight.shadowMapHeight = shadow_quality;
+		spotLight.shadowCameraNear = 50;
+		spotLight.shadowCameraFar = 40000;
+		spotLight.shadowCameraFov = 25;
+		spotLight.shadowDarkness = 0.6;
+	//	spotLight.shadowCameraVisible = true;
+		scene.add( spotLight );
+		sun_dummy.add(spotLight);
+	function morphColorsToFaceColors( geometry ) 
+		{
+		if ( geometry.morphColors && geometry.morphColors.length ) {
+			var colorMap = geometry.morphColors[ 0 ];
+			for ( var i = 0; i < colorMap.colors.length; i ++ ) {
+				geometry.faces[ i ].color = colorMap.colors[ i ];
+				}
+			}
+		}
+
+	//PHYSICS OBJECTS
+
+
+	phyGeometry = new THREE.CubeGeometry( 80,80,80 );
+	phyMaterial= new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } );
+		PhysicalCube = new THREE.Mesh( phyGeometry, phyMaterial );
+		PhysicalCube.visible = false;
+		PhysicalCube.position.set ( playerPosX,playerPosY,playerPosZ );
+		scene.add( PhysicalCube );
+
+	function onMouseDown( event_info ) 
+		{
+		    event_info.preventDefault();  
+		    mouse.x = ( event_info.clientX / window.innerWidth ) * 2 - 1;
+		    mouse.y = - ( event_info.clientY / window.innerHeight ) * 2 + 1;
+		    mouse_vector.set( mouse.x, mouse.y, mouse.z );
+		    projector.unprojectVector( mouse_vector, camera );
+	    var direction = mouse_vector.sub( camera.position ).normalize();
+		    ray.set( camera.position, direction );
+		    intersects = ray.intersectObjects( scene.children, true );
+		    if(intersects.length)
+		    {
+		    if(intersects[0].object.id == 116116116) 
+			    {
+			    	//console.log(intersects[0].object.id)
+			    	
+			    	//console.log(intersects[0].object.id);
+			    	//intersects[0].object.visible = true;
+			    	rotation_dummy.lookAt(intersects[0].point);
+			    	rotationion = mesh116.position.angleTo(new THREE.Vector3(intersects[0].point.x,intersects[0].point.y,intersects[0].point.z) ) ;
+
+			    	console.log(rotationion)
+
+			    	mesh_clicker.position.set(intersects[0].point.x,intersects[0].point.y,intersects[0].point.z);
+			    	/*
+			    	for (i=0;i<10;i++)
+			    	{
+			    		j = i/10;
+			    		PhysicalCube.position.x = (PhysicalCube.position.x)*(1-j) + mesh_clicker.position.x*j;
+			    		PhysicalCube.position.z = (PhysicalCube.position.z)*(1-j) + mesh_clicker.position.z*j;
+			    	}
+					*/
+					delta_x = PhysicalCube.position.x - intersects[0].point.x;
+					delta_z = PhysicalCube.position.z - intersects[0].point.z;
+			var direction = new THREE.Vector3().subVectors( PhysicalCube.position, intersects[0].point );
+					//distu1 = (PhysicalCube.position.x - intersects[0].point.x);
+					angleist = PhysicalCube.position.angleTo(intersects[0].point)
+					console.log(mesh116.up, direction.x);
+
+			    	//START EVENT 1
+			    //	var target_rotation = 
+			    	var walk_distance = PhysicalCube.position.distanceTo(intersects[0].point);
+					var tween_time = walk_distance * 1.6 ;
+					//click_dummy.visible = true;
+					//click_dummy.position.set(intersects[0].object.position.x,100,intersects[0].object.position.z);
+			    	
+
+			    	//mesh116.rotation.y = mesh116.rotation.y + Math.PI;
+			    	new TWEEN.Tween( camera_dummy.rotation).to( {  
+					x: rotation_dummy.rotation.x,
+					y: rotation_dummy.rotation.y  + Math.PI,
+					z: rotation_dummy.rotation.z
+					}, tween_time ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			    
+			     new TWEEN.Tween( mesh116.quaternion).to( {  
+					x: rotation_dummy.quaternion.x,
+					y: rotation_dummy.quaternion.y,
+					z: rotation_dummy.quaternion.z,
+					w: rotation_dummy.quaternion.w
+					}, 200 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			     console.log(rotation_dummy.rotation.y)
+			   // .quaternion.setFromAxisAngle( vertor_up , 0 );
+
+			    new TWEEN.Tween( PhysicalCube.position)
+			    .to( {  
+					x: intersects[0].point.x,
+					z: intersects[0].point.z }, tween_time )
+			    .onUpdate( function () {
+			    	loopMorphs(mesh116,400,0,10,1);
+			    	})
+			    .start();
+
+			    //
+			       //jsonLoader.load( "art/carrot.js",addItemsToScene);
+			       
+
+			    }
+			if( intersects[0].object.id == 100002 ) 
+			    {    
+			   alert("I might give you a quest some day!");
+			    } 
+			}
+		}
+/*
+	function onMouseMove( event_info ) 
+		{
+		    event_info.preventDefault();  
+		    mouse.x = ( event_info.clientX / window.innerWidth ) * 2 - 1;
+		    mouse.y = - ( event_info.clientY / window.innerHeight ) * 2 + 1;
+		    mouse_vector.set( mouse.x, mouse.y, mouse.z );
+		    projector.unprojectVector( mouse_vector, camera );
+	    var direction = mouse_vector.sub( camera.position ).normalize();
+		    ray.set( camera.position, direction );
+		    intersects = ray.intersectObjects( npc_dummy , false );
+		    if(intersects.length)
+		    {    
+			   meshNPC1.visible = true;
+			    }
+			    else{
+			    	meshNPC1.visible = false;
+			    }
+			
+		   
+		}	
+*/
+function onMouseWheel( event_info ) 
+		{
+			if (event_info.detail<0 && camera.position.y<2500 || event_info.wheelDelta<0 && camera.position.y<2500)
+			{
+				camera.position.y += 50;
+			}
+			if (event_info.detail>0 && camera.position.y>350 || event_info.wheelDelta>0 && camera.position.y>350)
+			{
+				camera.position.y -= 50;
+			}
+		  console.log(event_info.wheelDelta );
+		}	
+
+} //INIT END
+
+	//MORPH
+function loopMorphs(geometry,seconds,startKeyframe,endKeyframe,playbackDirection)
+	{
+	var duration = seconds;
+	var keyframes = endKeyframe - startKeyframe ;
+		interpolation = duration / keyframes;
+	var time = Date.now() % duration;
+	var keyframe = 0;
+		if (playbackDirection == 1)
+			keyframe = Math.floor( time / interpolation )+startKeyframe;
+		if (playbackDirection == -1)
+			keyframe = Math.abs(keyframes - Math.floor( time / interpolation )+startKeyframe);
+		if ( geometry ) 
+		{
+			if ( keyframe != currentKeyframe ) 
+			{
+			geometry.morphTargetInfluences[ lastKeyframe ] = 0;
+			geometry.morphTargetInfluences[ currentKeyframe ] = 1;
+			geometry.morphTargetInfluences[ keyframe ] = 0;
+			lastKeyframe = currentKeyframe;
+			currentKeyframe = keyframe;
+			}
+			if (keyframe != 0)
+			{
+			geometry.morphTargetInfluences[ keyframe ] = ( time % interpolation ) / interpolation;
+			geometry.morphTargetInfluences[ lastKeyframe ] = 1 - ( time % interpolation ) / interpolation;
+			}
+
+		}
+	}
+
+function animate() 
+	{
+	    requestAnimationFrame( animate );
+		render();	
+		TWEEN.update();	
+		update()	
+	}
+
+
+function update()
+{
+	//meshNPC1.visible = false;
+	base_test.lookAt(look_at_test.position);
+	plane.visible = false;
+	var current_state = new THREE.Vector3(PhysicalCube.position.x,PhysicalCube.position.y,PhysicalCube.position.z);
+	var target_state = new THREE.Vector3(PhysicalCube.position.x,PhysicalCube.position.y,PhysicalCube.position.z);
+	//NPC ROTATE AND BUBBLE
+	if(PhysicalCube.position.distanceTo(meshNPC.position)<1000)
+		{
+		meshNPC.lookAt(new THREE.Vector3(PhysicalCube.position.x,0,PhysicalCube.position.z));
+		meshNPC1.lookAt(new THREE.Vector3(PhysicalCube.position.x,0,PhysicalCube.position.z));
+		meshBubble.lookAt(new THREE.Vector3(camera.position.x,190,camera.position.z));
+		new TWEEN.Tween( meshBubble.scale).to( { x: 1, y: 1, z: 1}, 60 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+		}
+		else
+		{
+		new TWEEN.Tween( meshBubble.scale).to( { x: 0, y: 0, z: 0}, 60 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+		}
+	//ITEMS PICKING
+	for(i=0;i<positionArray.length;i++)
+		{
+			if (PhysicalCube.position.distanceTo(positionArray[i].position) < 400)
+			{
+				counter = counter+1;
+				new TWEEN.Tween( positionArray[i].position).to( {  
+					x: PhysicalCube.position.x,
+					y: PhysicalCube.position.y+160,
+					z: PhysicalCube.position.z }, 100 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+				new TWEEN.Tween( positionArray[i].scale).to( {  x: 0, y: 0, z: 0}, 100 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+				positionArray.splice(i,1);
+			}
+		}
+	//END EVENT 1
+	if (counter == items_collected)
+		{
+			document.getElementById("pop").innerHTML="Nicely Done!" + "<br>Score: " + counter;
+			document.getElementById("button1").style.visibility="visible";
+			//document.getElementById("color_overlay").style.zIndex="99";
+			/* REMOVE CARROTS
+			for(i=0;i<positionArray.length;i++)
+			{
+				scene.remove(positionArray[i]);
+			}
+			*/
+		}
+
+		//spotLight.color.setHex( Math.random() * sun_color );
+		//console.log(cube.rotation.z)
+		//cube.rotation.z +=0.01;
+//mesh_clicker.rotation.y += 0.061;
+//loopMorphs(mesh116,400,0,10,1);
+		mesh116.position.set(PhysicalCube.position.x,PhysicalCube.position.y-45,PhysicalCube.position.z);
+		var moveDistance =20;
+		var speed = 300;
+		var rotateAngle = Math.PI / 90; 
+		var currentRotation = mesh116.rotation.y;	
+		var numSin = Math.sin(currentRotation);
+		var numCos = Math.cos(currentRotation);
+		var offsetLeftNumSin = Math.sin(currentRotation - Math.PI/2);
+		var offsetLeftNumCos = Math.cos(currentRotation - Math.PI/2);
+		
+
+
+			/*
+		if ( keyboard.pressed("shift") )
+			{
+			moveDistance =40;
+			speed= 150;
+			}
+
+		if ( keyboard.pressed("up") )
+			{
+			loopMorphs(mesh116,speed,0,6,1);
+			PhysicalCube.position.z -= moveDistance*numCos;
+			PhysicalCube.position.x -= moveDistance*numSin;
+			}				
+		if ( keyboard.pressed("down") )
+			{
+			loopMorphs(mesh116,speed,1,5,-1);
+			PhysicalCube.position.z += moveDistance*numCos;
+			PhysicalCube.position.x += moveDistance*numSin;
+			}
+		if ( keyboard.pressed("left") )
+			{
+			loopMorphs(mesh116,speed,1,6,1);
+			mesh116.rotation.y += rotateAngle;
+			//cube.rotation.y += rotateAngle;
+			}
+		if ( keyboard.pressed("right") )
+			{
+			loopMorphs(mesh116,speed,1,6,1);
+			mesh116.rotation.y -= rotateAngle;
+			//cube.rotation.y -= rotateAngle;
+			}
+		*/	
+		if (mouse.x < -0.3)
+		{
+			camera_dummy.rotation.y -= ((mouse.x+1)*(0-camera_max_speed))/(-0.3+1) + camera_max_speed;
+
+		}
+		if (mouse.x > 0.3)
+		{
+			camera_dummy.rotation.y +=((mouse.x-0.3)*(camera_max_speed-0))/(1-0.3) + 0;
+
+		}
+		if (mouse.y > 0.7)
+		{
+			//cube.rotation.z +=0.03;
+		}
+
+		click_dummy.visible = false;
+		/*
+		if (current_state >= target_state)
+		{
+			loopMorphs(mesh116,300,0,10,1);
+		}
+		*/
+
+		if(mesh_clicker.position.distanceTo(PhysicalCube.position)<196)
+		{
+
+			 new TWEEN.Tween( mesh_clicker.position)
+			    .to( {  
+					y: -196}, 116 )
+			    .start();
+			
+		}
+
+		
+		camera_dummy.position.x = PhysicalCube.position.x;
+		camera_dummy.position.z = PhysicalCube.position.z;
+		sun_dummy.position.set(PhysicalCube.position.x,PhysicalCube.position.y,PhysicalCube.position.z);
+		var relativeCameraOffset = new THREE.Vector3(0,100,1600);
+		var cameraOffset = relativeCameraOffset.applyMatrix4( camera_dummy.matrixWorld );
+
+		camera.position.x = cameraOffset.x;
+		//camera.position.y = cameraOffset.y;
+		camera.position.z = cameraOffset.z;
+		camera.lookAt( new THREE.Vector3(PhysicalCube.position.x,PhysicalCube.position.y +300,PhysicalCube.position.z));
+		//camera.rotation.y +=0.1;
+		rotation_dummy.position.set(PhysicalCube.position.x, PhysicalCube.position.y, PhysicalCube.position.z);
+		//rotation_dummy.up = new THREE.Vector3(0,1,0);
+	var count=100;
+
+	var counter2=setInterval(timer, 1000); //1000 will  run it every 1 second
+
+	function timer()
+	{
+	  count=count-1;
+	  if (count <= 0)
+	  {
+	     clearInterval(counter2);
+	     //counter ended, do something here
+	     return;
+	  }
+
+	  //Do code for showing the number of seconds here
+	}
+	document.getElementById("myspan").innerHTML="Items Collected: " + counter + "<br>Time: " + Math.floor(counter2/10)  ;
+
+}
+
+function clearScreen()
+	{
+	document.getElementById("pop").innerHTML= "";
+	document.getElementById("button1").style.visibility="hidden";
+	document.getElementById("color_overlay").style.zIndex="-1";
+	//PhysicalCube.position.set(playerPosX,playerPosY,playerPosZ);
+	//mesh116.rotation.y = 0;
+	//counter = 0;
+	}
+function render() 
+	{
+		
+		renderer.clear();
+		renderer.render( scene, camera );
+	}
+
+
+</script>
+</body>
+</html>
