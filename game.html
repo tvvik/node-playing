@@ -45,143 +45,150 @@
 var counter_clients = 0;
 var connected_players_mesh = [];
 var connected_players_coord = [];
-var socket = io.connect();
+var socket;
 var thisClientId = 0;
 
-socket.on('connected', function(data){
-	console.log('conected to server with uniqueID: '+data.uniqueID);
-	thisClientId = data.uniqueID;
-	setInterval(function(){
-		var paket = {
-			id: data.uniqueID,
-			x:PhysicalCube.position.x,
-			y:PhysicalCube.position.y,
-			z:PhysicalCube.position.z,
-			position:censor(PhysicalCube.position),
-			quaternion:{
-				x:mesh116.quaternion.x,
-				y:mesh116.quaternion.y,
-				z:mesh116.quaternion.z,
-				w:mesh116.quaternion.w,
-				},
-			//angle:PhysicalCube.position.angleTo(),
-			}
-			//console.log('trimite x:' + paket.x);
-		socket.emit('position', paket);
-	}, 500);
-});
+function connect()
+{
+	socket = io.connect();
+	
+	socket.on('connected', function(data){
+		console.log('conected to server with uniqueID: '+data.uniqueID);
+		thisClientId = data.uniqueID;
+		setInterval(function(){
+			var paket = {
+				id: data.uniqueID,
+				x:PhysicalCube.position.x,
+				y:PhysicalCube.position.y,
+				z:PhysicalCube.position.z,
+				position:censor(PhysicalCube.position),
+				quaternion:{
+					x:mesh116.quaternion.x,
+					y:mesh116.quaternion.y,
+					z:mesh116.quaternion.z,
+					w:mesh116.quaternion.w,
+					},
+				//angle:PhysicalCube.position.angleTo(),
+				}
+				//console.log('trimite x:' + paket.x);
+			socket.emit('position', paket);
+		}, 500);
+	});
 
-socket.on('remove', function (data){
-	var remID = data.removeID;
-	var remIndex = -1;
-	for (var i=0;i<connected_players_coord.length;i++)
-	{
-		if (connected_players_coord[i].id == remID) remIndex = i;
-	}
-	connected_players_coord.splice(remIndex,1);
-	console.log('will remove this: '+connected_players_mesh[remIndex]);
-	scene.remove(connected_players_mesh[remIndex]);
-	connected_players_mesh.splice(remIndex,1);
-});
-
-socket.on('allPlayerPositions', function (data){
-	//console.log('data x received from server:'+data[0].x);
-	//connected_players_coord
-	var allPlayers = [];
-	allPlayers = data;
-	for (var i=0;i<allPlayers.length;i++)
-	{
-		var resultsArray = [];
-		resultsArray = connected_players_coord.filter(function (element) {
-			return element.id === allPlayers[i].id;
-		});
-		
-		if ((resultsArray.length == 0 || connected_players_coord.length == 0)&&(allPlayers[i].id!=thisClientId))
+	socket.on('remove', function (data){
+		var remID = data.removeID;
+		var remIndex = -1;
+		for (var i=0;i<connected_players_coord.length;i++)
 		{
-			connected_players_coord.push(allPlayers[i]);
-			jsonLoader.load( "art/char06.js",addNewPlayerToScene);
-			console.log('added another player:' + allPlayers[i].id+'  -i:'+i);	
+			if (connected_players_coord[i].id == remID) remIndex = i;
 		}
-		if (resultsArray.length>0)
+		connected_players_coord.splice(remIndex,1);
+		console.log('will remove this: '+connected_players_mesh[remIndex]);
+		scene.remove(connected_players_mesh[remIndex]);
+		connected_players_mesh.splice(remIndex,1);
+	});
+
+	socket.on('allPlayerPositions', function (data){
+		//console.log('data x received from server:'+data[0].x);
+		//connected_players_coord
+		var allPlayers = [];
+		allPlayers = data;
+		for (var i=0;i<allPlayers.length;i++)
 		{
-			//console.log(' total connected players: '+connected_players_coord.length);
-			for (var q=0;q<connected_players_coord.length;q++)
+			var resultsArray = [];
+			resultsArray = connected_players_coord.filter(function (element) {
+				return element.id === allPlayers[i].id;
+			});
+			
+			if ((resultsArray.length == 0 || connected_players_coord.length == 0)&&(allPlayers[i].id!=thisClientId))
 			{
-				//console.log('connected_players_coord id: '+connected_players_coord[q].id);
-				if (resultsArray[0].id == connected_players_coord[q].id)
+				connected_players_coord.push(allPlayers[i]);
+				jsonLoader.load( "art/char06.js",addNewPlayerToScene);
+				console.log('added another player:' + allPlayers[i].id+'  -i:'+i);	
+			}
+			if (resultsArray.length>0)
+			{
+				//console.log(' total connected players: '+connected_players_coord.length);
+				for (var q=0;q<connected_players_coord.length;q++)
 				{
-					connected_players_coord[q].x=allPlayers[i].x;
-					connected_players_coord[q].y=allPlayers[i].y;
-					connected_players_coord[q].z=allPlayers[i].z;
-					connected_players_coord[q].position=allPlayers[i].position;
-					connected_players_coord[q].quaternion=allPlayers[i].quaternion;
-					
-					console.log('qua schimbat: '+allPlayers[i].quaternion.x);
-					
-					//var walk_distance = connected_players_mesh[q].position.distanceTo(allPlayers[i].position);
-					
-					if (connected_players_mesh[q])
+					//console.log('connected_players_coord id: '+connected_players_coord[q].id);
+					if (resultsArray[0].id == connected_players_coord[q].id)
 					{
-					
-					var walk_distance = Math.sqrt( Math.pow(allPlayers[i].x - connected_players_mesh[q].position.x, 2) + Math.pow(allPlayers[i].y - connected_players_mesh[q].position.y, 2) + Math.pow(allPlayers[i].z - connected_players_mesh[q].position.z, 2) )
-					var tween_time = walk_distance * 1.6 ;
-					
-					
-					
-					new TWEEN.Tween( connected_players_mesh[q].quaternion).to( {  
-					x: allPlayers[i].quaternion.x,
-					y: allPlayers[i].quaternion.y,
-					z: allPlayers[i].quaternion.z,
-					w: allPlayers[i].quaternion.w
-					}, 200 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
-					
-					new TWEEN.Tween( connected_players_mesh[q].position).to({  
-						x: allPlayers[i].x,
-						y: allPlayers[i].y,
-						z: allPlayers[i].z }, tween_time ).onUpdate( function () {
-							//loopMorphs(connected_players_mesh[q],400,0,10,1);
-						}).start();
-					loopMorphs(connected_players_mesh[q],400,0,10,1);
-					//connected_players_mesh[q].position.x = allPlayers[i].x;
-					//connected_players_mesh[q].position.y = allPlayers[i].y;
-					//connected_players_mesh[q].position.z = allPlayers[i].z;
-					
-					//connected_players_mesh[q].position = allPlayers[i].pos;
-					
-					//console.log('moving to x: '+allPlayers[i].x);
+						connected_players_coord[q].x=allPlayers[i].x;
+						connected_players_coord[q].y=allPlayers[i].y;
+						connected_players_coord[q].z=allPlayers[i].z;
+						connected_players_coord[q].position=allPlayers[i].position;
+						connected_players_coord[q].quaternion=allPlayers[i].quaternion;
+						
+						//console.log('qua schimbat: '+allPlayers[i].quaternion.x);
+						
+						//var walk_distance = connected_players_mesh[q].position.distanceTo(allPlayers[i].position);
+						
+						if (connected_players_mesh[q])
+						{
+						
+						var walk_distance = Math.sqrt( Math.pow(allPlayers[i].x - connected_players_mesh[q].position.x, 2) + Math.pow(allPlayers[i].y - connected_players_mesh[q].position.y, 2) + Math.pow(allPlayers[i].z - connected_players_mesh[q].position.z, 2) )
+						var tween_time = walk_distance * 1.6 ;
+						
+						
+						
+						new TWEEN.Tween( connected_players_mesh[q].quaternion).to( {  
+						x: allPlayers[i].quaternion.x,
+						y: allPlayers[i].quaternion.y,
+						z: allPlayers[i].quaternion.z,
+						w: allPlayers[i].quaternion.w
+						}, 200 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+						
+						new TWEEN.Tween( connected_players_mesh[q].position).to({  
+							x: allPlayers[i].x,
+							y: allPlayers[i].y,
+							z: allPlayers[i].z }, tween_time ).onUpdate( function () {
+								//loopMorphs(connected_players_mesh[q],400,0,10,1);
+							}).start();
+						//loopMorphs(connected_players_mesh[q],400,0,10,1);
+						//connected_players_mesh[q].position.x = allPlayers[i].x;
+						//connected_players_mesh[q].position.y = allPlayers[i].y;
+						//connected_players_mesh[q].position.z = allPlayers[i].z;
+						
+						//connected_players_mesh[q].position = allPlayers[i].pos;
+						
+						//console.log('moving to x: '+allPlayers[i].x);
+						}
 					}
 				}
+				//var qq = connected_players_coord.indexOf(
 			}
-			//var qq = connected_players_coord.indexOf(
 		}
-	}
-	//console.log('getting position data for : '+connected_players_coord.length);
-	
-	function addNewPlayerToScene( geometry, materials ) 
-	{
-		var map = new THREE.ImageUtils.loadCompressedTexture('art/char_diff.dds')
-		var meshPlayer = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { map:map,color: 0x606060, morphTargets: true } ) );
-		connected_players_mesh.push(meshPlayer);
-		meshPlayer.castShadow = true;
-		meshPlayer.receiveShadow = true;
-		meshPlayer.id = connected_players_coord[connected_players_coord.length-1].id;
-		meshPlayer.position.x = playerPosX ;
-		meshPlayer.position.y = playerPosY;
-		meshPlayer.position.z = playerPosZ;
-		meshPlayer.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
-		scene.add( meshPlayer );
-		//var playerObj = {
-		//	'id:':		
-	}
-	
-});
-	
+		//console.log('getting position data for : '+connected_players_coord.length);
+		
+		function addNewPlayerToScene( geometry, materials ) 
+		{
+			var map = new THREE.ImageUtils.loadCompressedTexture('art/char_diff.dds')
+			var meshPlayer = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { map:map,color: 0x606060, morphTargets: true } ) );
+			connected_players_mesh.push(meshPlayer);
+			meshPlayer.castShadow = true;
+			meshPlayer.receiveShadow = true;
+			meshPlayer.id = connected_players_coord[connected_players_coord.length-1].id;
+			meshPlayer.position.x = playerPosX ;
+			meshPlayer.position.y = playerPosY;
+			meshPlayer.position.z = playerPosZ;
+			meshPlayer.quaternion.setFromAxisAngle( new THREE.Vector3(0,0,1) , 0 );
+			scene.add( meshPlayer );
+			//var playerObj = {
+			//	'id:':		
+		}
+		
+	});
+		
 
-socket.on('count', function(data){
-    counter_clients = data.count;
-	
-	
-});
+	socket.on('count', function(data){
+		counter_clients = data.count;
+		
+		
+	});
+}
+
+
 
 function censor(censor) {
   var i = 0;
@@ -257,7 +264,9 @@ var camera_max_speed = 0.001;
 var allPlayers = [];
 
 init();
+connect();
 animate();
+
 
 function interpolate(x1,x2,x3,y1,y3)
 {	
@@ -682,7 +691,7 @@ function update()
 		}
 		else
 		{
-		new TWEEN.Tween( meshBubble.scale).to( { x: 0, y: 0, z: 0}, 60 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+		if (meshBubble) new TWEEN.Tween( meshBubble.scale).to( { x: 0, y: 0, z: 0}, 60 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
 		}
 	//ITEMS PICKING
 	for(i=0;i<positionArray.length;i++)

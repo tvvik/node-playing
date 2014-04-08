@@ -25,8 +25,23 @@ function start(route, handle) {
 	
 	var server = http.createServer(onRequest).listen(process.env.PORT || 5000);
 		
-	io.listen(server).on('connection', function(socket){
-		console.log('Client connected...');
+	var iol = io.listen(server);
+	iol.set('log level', 1);
+	iol.configure('production', function(){
+	iol.enable('browser client etag');
+	iol.set('log level', 1);
+
+	iol.set('transports', [
+		'websocket'
+	, 'flashsocket'
+	, 'htmlfile'
+	, 'xhr-polling'
+	, 'jsonp-polling'
+	]);
+	});
+
+	iol.on('connection', function(socket){
+		socket.set('log level', 1);
 		clientSockets.push(socket);
 		counts++;
 		emitToAll(counts);
@@ -48,7 +63,7 @@ function start(route, handle) {
 			}
 		clients.push(new_player);
 		socket.emit('connected', {'uniqueID':new_player.id});
-		
+		console.log('Client connected...  id: '+new_player.id);
 		//send data to client
 		
 		setInterval(function(){
@@ -64,6 +79,7 @@ function start(route, handle) {
 			var re = clients.indexOf(new_player);
 			clients.splice(re,1);
 			delete clientSockets[dc];
+			clientSockets.splice(dc,1);
 		});
 		
 		socket.on('position', function (data){
@@ -75,10 +91,10 @@ function start(route, handle) {
 			new_player.position = data.position;
 			new_player.quaternion = data.quaternion;
 			new_player.id = data.id;
-			console.log('data received: '+data.x);
+			//console.log('data received: '+data.x);
 			
 			var pl = clients.indexOf(new_player);
-			console.log('changing lient coord: '+pl);
+			//console.log('changing lient coord: '+pl);
 			clients[pl].x = data.x;
 			clients[pl].y = data.y;
 			clients[pl].position = data.position;
