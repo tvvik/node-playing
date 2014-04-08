@@ -114,9 +114,43 @@ function socket(response, request){
 	
 }
 
+function jsStuff(response, request){
+	var path = url.parse(request.url).pathname;
+	fs.readFile(__dirname + path, function(error, data){
+        if (error){
+			response.writeHead(404);
+            response.write("opps this doesn't exist - 404");
+			response.end();
+        }
+        else{
+            response.writeHead(200, {"Content-Type": "application/javascript"});
+            response.write(data, "utf8");
+			response.end();
+         }
+    });
+	
+}
+
+function cssStuff(response, request){
+	var path = url.parse(request.url).pathname;
+	fs.readFile(__dirname + path, function(error, data){
+        if (error){
+			response.writeHead(404);
+            response.write("opps this doesn't exist - 404");
+			response.end();
+        }
+        else{
+            response.writeHead(200, {"Content-Type": "text/css"});
+            response.write(data, "utf8");
+			response.end();
+         }
+    });	
+}
+
+
 function show(response) {
 	console.log("Request handler 'show' was called.");
-	fs.readFile(_path+"/tmp/tmp.png", "binary", function(error, file) {
+	fs.readFile(__dirname + path, "binary", function(error, file) {
 		if(error) {
 			response.writeHead(500, {"Content-Type": "text/plain"});
 			response.write(error + " aruncata de FS \n");
@@ -129,6 +163,8 @@ function show(response) {
 	});
 }
 
+exports.cssStuff = cssStuff;
+exports.jsStuff = jsStuff;
 exports.click = click;
 exports.start = start;
 exports.upload = upload;

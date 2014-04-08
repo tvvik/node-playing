@@ -1,32 +1,34 @@
 {
-  "name": "node-starting-server",
-  "version": "0.0.0",
-  "description": "This small server is so cool.",
+  "name": "node-playing",
+  "version": "0.0.1",
+  "description": "adding the game to node.js",
   "main": "index.js",
+  "dependencies": {
+    "express": "^3.5.1",
+    "npm": "^1.4.6",
+    "logfmt": "^1.1.2",
+    "formidable": "^1.0.14",
+    "socket.io": "^0.9.16",
+	"three": "^0.66.2"
+  },
+  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jane-doe/node-example.git"
+    "url": "https://github.com/tvvik/node-playing.git"
   },
   "keywords": [
     "test",
-    "node"
+    "node",
+    "three"
   ],
-  "author": "tvik-doe",
+  "author": "tvik",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/tvvik/node-playing/issues"
   },
-  "engines": {
-    "node": "0.10.x"
-  },
-  "homepage": "https://github.com/jane-doe/node-example",
-  "dependencies": {
-    "express": "^3.5.1",
-    "formidable": "^1.0.14",
-    "logfmt": "^1.1.2"
-  },
-  "devDependencies": {}
+  "homepage": "https://github.com/tvvik/node-playing"
 }
